@@ -1,6 +1,6 @@
 ---
 name: slop-design
-description: Design Roblox HUDs and menus with the Studs or Raised theme, using measured layouts, outlined typography, matching icon colors and responsive scaling.
+description: Design Roblox HUDs and menus with the Studs, Raised or BlockyStuds theme, using measured layouts, outlined typography, matching icon colors and responsive scaling.
 ---
 
 # Slop design
@@ -27,6 +27,7 @@ Take every icon from `resources/icons/freeIconsPack.luau`. It maps icon names to
 - Search the file by name and copy the id into `ImageLabel.Image`. Do not search the Creator Store and do not upload new icons if the pack has a match.
 - Most icons come in `1st` and `2nd` variants. Pick whichever fits. If one window already uses a variant, keep the rest of the window consistent with it. 1st is a 3d style, 2nd is a flatter style.
 - Icons are 256px outlined images. Use `ScaleType = Fit` and `BackgroundTransparency = 1`.
+- Never change an icon's `ImageColor3`. Leave it at (255, 255, 255) so the icon shows its own colors. If an icon's color doesn't fit, pick a different icon or variant instead of tinting it.
 - If the pack has nothing that fits, say so and ask for an asset id. Do not substitute a text character.
 
 ### Roblox characters
@@ -71,7 +72,7 @@ HUD elements sit on the game screen all the time: menu buttons, currency counter
 Don't build a HUD like this: a row of menu buttons where each icon sits on its own colored, patterned, outlined square. Drop the squares and keep the icons and labels.
 
 ### Color identity
-- Choose each menu's accent from its main icon's dominant color or the supplied reference. Carry that accent through its header, related cards and highlighted text. Menus with different icon colors need different headers. Never clone the orange Raised header or pink Studs header across every menu.
+- Choose each menu's accent from its main icon's dominant color or the supplied reference. Carry that accent through its header, related cards and highlighted text. Menus with different icon colors need different headers. Never clone the orange Raised header, pink Studs header or orange BlockyStuds topbar across every menu.
 - Match a card's background to its own icon when it represents a distinct currency, reward or item. Shared action colors still apply, such as green purchase buttons and red close buttons.
 - The palette tables are starting colors, not a closed list. Add a missing hue in the same style rather than replacing the reference color with an unrelated listed color. Raised surfaces need a lighter top, saturated bottom and darker lip of the same hue.
 - When changing a menu's color, include its header. Keep the close button red unless requested otherwise, with a readable outlined "X".
@@ -637,3 +638,213 @@ ScreenGui
 - [ ] HUD prices are green, text gradients have two smooth keypoints, and no HUD icon has a background tile.
 - [ ] Notifications follow their availability condition, and value feedback does not cover adjacent prices.
 - [ ] The final scroll row and its bottom margin are reachable. Direct aspect-ratio rows use full width with horizontal padding.
+
+## BlockyStuds
+This UI style is heavily inspired by derpmonster83's Dogs vs Cats TD, credits to them.
+
+Flat, blocky menus on a dark gray body. A bright studded topbar carries the menu's color. Content sits on flat gradient cards with thin black outlines. Buttons mix two kinds:
+- **Inside a frame:** 3D buttons with a dark lip, such as buy, equip and unequip.
+- **Topbar and HUD:** 2D flat buttons that grow on hover and shrink on press, such as the close button, HUD icons and small badges on tiles.
+
+### Units
+- All pixel values below are 1080p pixels, measured from the reference screenshots.
+- `Main` is sized in Offset with a tagged `UIScale`, `MinScale` 0.55, `MaxScale` 1.
+- Build children in Scale by dividing each pixel value by its parent's pixel size. Fixed-height rows and gaps inside a `ScrollingFrame` follow the shared ScrollingFrame rules.
+- No `UICorner` anywhere. Every corner is square.
+- `ScreenGui`: `IgnoreGuiInset = true`, `ResetOnSpawn = false`, `ZIndexBehavior = Sibling`, `ScreenInsets = DeviceSafeInsets`.
+
+### Dark shade
+Every colored element has one dark shade of its own hue. Use it for that element's outline, its lip and the stroke on its text. Do not use black for these.
+
+| Color | Fill | Dark shade |
+|---|---|---|
+| Red (close, unequip, sell) | (255, 92, 92) → (255, 69, 69) | (95, 14, 14) |
+| Green (buy, equip) | (207, 255, 56) → (74, 255, 104) | (15, 84, 22) |
+| Pink (gift badge) | (245, 137, 255) | (106, 33, 93) |
+
+For a new hue, take the fill and multiply each channel by about 0.35.
+
+Panels, cards, the topbar and plain text use black (0, 0, 0) outlines and strokes instead.
+
+### Window
+`Main` is an invisible frame holding the topbar and the body. The topbar sticks out past the body on both sides.
+
+| Element | Size | Placement |
+|---|---|---|
+| Topbar row | full `Main` width, 64 tall | top of `Main` |
+| Body | `Main` width minus 20, rest of the height | centered under the topbar, sharing its bottom outline |
+| Side panel (optional) | 254 wide | 16 to the right of the body, top 4 below the body's top, bottom 6 above it |
+
+The topbar sticks out 10 px past the body on each side. The reference inventory body is 653 × 441, the shop body 652 × 505.
+
+Body:
+
+| Property | Value |
+|---|---|
+| `BackgroundColor3` | (49, 50, 51) |
+| `BackgroundTransparency` | 0.1 |
+| Outline | `UIStroke`, black, 2, `BorderStrokePosition` Outer |
+| Pattern | none |
+
+A side panel is a second body: same color, same outline, no topbar. Use it for details of the selected item.
+
+### Topbar
+The topbar is 2D: flat, no lip, no inner white stroke.
+
+| Property | Value |
+|---|---|
+| Height | 64, including the outline |
+| Fill | the menu's color, as a `UIGradient` with `Rotation = 90`, lighter top to darker bottom |
+| Outline | `UIStroke`, black, 2, Outer |
+| Pattern | `Stud` from `surfaceTypes.luau` (`rbxassetid://12055407192`), `ScaleType` Tile, `TileSize` {0, 60}, {0, 60}, `ImageTransparency` 0.75 |
+
+One stud tile image is 60 px, so the 60 px tall fill shows two rows of studs.
+
+The topbar's color comes from the menu's icon, following the shared Color identity rules. Every menu gets its own topbar color. Reference fills:
+
+| Menu | Top | Bottom |
+|---|---|---|
+| Inventory (orange) | (255, 171, 69) | (253, 133, 35) |
+| Shop (magenta) | (255, 102, 252) | (215, 61, 255) |
+
+Topbar contents, left to right:
+- **Icon (optional):** fills the left 64 × 64 square, in its normal colors.
+- **Title:** starts 72 px from the topbar's left edge, with or without an icon. Left-aligned, vertically centered.
+- **Close button:** the right end of the topbar row, a 64 × 64 square. The topbar fill stops where it starts.
+
+### Close button
+2D, flat red square. It grows and shrinks with the 2D motion, never the 3D press.
+
+| Property | Value |
+|---|---|
+| Size | 64 × 64 |
+| Fill | red gradient (255, 92, 92) → (255, 69, 69) |
+| Outline | `UIStroke`, (95, 14, 14), 2, Outer |
+| Label | "X", white, `TextSize` 52, stroke (95, 14, 14) 4 |
+
+### Content cards
+Cards inside the body are flat, with no lip and no inner white stroke.
+
+| Property | Value |
+|---|---|
+| Fill | `UIGradient`, `Rotation = 90`, lighter top to darker bottom |
+| Outline | `UIStroke`, black, 1, Outer |
+| Pattern | none |
+
+| Card | Top | Bottom |
+|---|---|---|
+| Featured offer (gold) | (255, 239, 62) | (255, 149, 56) |
+| Gamepass group (blue) | (57, 222, 255) | (65, 132, 255) |
+| Luck (green) | (167, 255, 67) | (90, 210, 60) |
+
+Match each card to what it sells, following Color identity. Don't scatter decorative icons over cards.
+
+### Text
+- Font is Montserrat (`rbxasset://fonts/families/Montserrat.json`). Titles, buttons and numbers use `ExtraBold`. Section headings and detail lines use `Bold`.
+- Text is white (255, 255, 255) with a `UIStroke` (`ApplyStrokeMode = Contextual`, `LineJoinMode = Round`).
+- Text on a colored button uses that button's dark shade for its stroke. All other text uses black.
+
+| Text | `TextSize` | Weight | Stroke |
+|---|---|---|---|
+| Window title | 32 | ExtraBold | black 3 |
+| Close "X" | 52 | ExtraBold | dark shade 4 |
+| Section heading ("Gamepasses!") | 22 | Bold | black 1.5 |
+| Card title | 32 | ExtraBold | black 3 |
+| Card subtitle | 22 | Bold | black 2 |
+| Price on a buy button | 26 | ExtraBold | dark shade 2.5 |
+| Action button ("UNEQUIP") | 30 | ExtraBold | dark shade 3 |
+| Tile label ("VIP!") | 26 | ExtraBold | black 2.5 |
+| Item count ("x3") | 24 | ExtraBold | black 2.5 |
+| Item name | 26 | ExtraBold | black 2 |
+| Item price ("$120") | 28 | ExtraBold | black 2.5 |
+| Detail line ("Placement Limit: 3") | 20 | Bold | black 1.5 |
+
+- Section headings are left-aligned with the cards' left edge and sit directly above their card.
+- Text fill is flat white. Don't put gradients on text in this theme.
+
+### 3D buttons
+Buttons inside the body or a side panel are 3D. Build them like Raised buttons: an invisible `TextButton` holding `Body`, which holds `Face`, which holds the label. Press them with Raised's Button press motion, tagged `RaisedButton`.
+
+Differences from Raised:
+- The lip is 6 px of the button's dark shade.
+- The outline is 2 px of the same dark shade, not black.
+- No white inner stroke.
+
+| Button | Size | faceHeight |
+|---|---|---|
+| Buy button on a card | 164 × 60 | 0.9 |
+| Buy button under a tile | 143 × 60 | 0.9 |
+| Side panel action | 230 × 75 | 0.92 |
+
+- Buy buttons are always green and show `utf8.char(0xE002) .. price` in one label.
+- A side panel action button spans the panel minus 12 px on each side and sits 12 px above the panel's bottom. Color it by what it does: red to unequip, sell or remove, green to equip or buy.
+
+### 2D buttons
+The close button, topbar buttons, HUD icons and small badges on tiles are 2D. They have no lip and don't use the 3D press. Use Raised's HUD button press motion: an untagged `UIScale` named `PressScale` on each button, tag `RaisedHudButton`, 1.08 on hover and 0.92 on press.
+
+### Shop layout
+The body holds a `ScrollingFrame` that follows the shared ScrollingFrame rules.
+
+| Property | Value |
+|---|---|
+| Content margin | 9 px left of the cards, 9 px top |
+| Card width | body width minus 32 (620 in the reference) |
+| Scroll bar | `ScrollBarThickness` 12, `ScrollBarImageColor3` white, `ScrollBarImageTransparency` 0 |
+| Gap between a card and the next heading | 14 |
+| Gap between a heading and its card | 6 |
+
+Featured offer card, 620 × 141:
+- Title and subtitle left-aligned, 16 px from the left. The title's top sits about 45 px down, and the subtitle follows directly under it.
+- The offer's icon, about 130 px, sits in the middle.
+- The buy button, 164 × 60, sits 12 px from the right edge and 11 px from the bottom.
+
+Gamepass group card: one blue card holding a row of tiles, each with a buy button under it.
+
+| Part | Value |
+|---|---|
+| Columns | 4, 155 px apart |
+| Tile | 124 × 123, black at `BackgroundTransparency` 0.5, no outline, 18 px below the card's top |
+| Tile icon | fills the tile |
+| Tile label | bottom of the tile, centered |
+| Gift badge | 40 × 40 pink square in the tile's top-right corner, flush with both edges, outline (106, 33, 93) 2, gift icon in its normal colors |
+| Buy button | 143 × 60, centered under its tile, 7 px below it |
+| Bottom padding | 13 |
+
+If there are fewer passes than columns, leave the row short. Don't add filler passes.
+
+### Inventory layout
+- Items sit in a grid in the body, 124 px apart, starting 14 px in from the body's top-left.
+- An item is only its icon, about 100 px. No card, tile or background behind it.
+- An equipped item gets a green check badge in the icon's top-right corner, about 37 px.
+- The count ("x3") sits at the icon's bottom-right corner.
+- The side panel shows the selected item, top to bottom: its icon (about 100 px, centered), price, name, detail lines, stats with a small icon, and the action button at the bottom.
+
+### HUD
+HUD elements follow the shared HUD rules: floating icons and labels with no background, 2D, using the motion from 2D buttons. Don't put studded tiles or colored squares behind HUD icons.
+
+### Hierarchy
+```
+ScreenGui
+└─ Main                     (UIScale)
+   ├─ Topbar                (UIGradient, Stud pattern, UIStroke, Icon, Title)
+   ├─ Close                 (UIGradient, UIStroke, Label, PressScale)
+   ├─ Body                  (UIStroke)
+   │  └─ Content            (ScrollingFrame, UIListLayout, UIPadding)
+   │     ├─ StarterHeading
+   │     ├─ StarterPack     (UIGradient, UIStroke, Icon, Title, Subtitle, Buy)
+   │     ├─ PassesHeading
+   │     └─ Passes          (UIGradient, UIStroke, tiles and Buy buttons)
+   └─ SidePanel             (optional, UIStroke, details, Action)
+```
+
+`Buy` and `Action` are 3D: an invisible `TextButton` holding `Body`, which holds `Face`, which holds the label.
+
+### Checklist
+- [ ] The topbar is flat and studded, with a `Stud` tile at {0, 60}, {0, 60}, and its color matches the menu's icon.
+- [ ] The topbar sticks out 10 px past the body on each side, with a 64 × 64 red close button at its right end.
+- [ ] The body is dark gray (49, 50, 51) at 0.1 transparency with a 2 px black outline and no pattern.
+- [ ] Cards are flat gradients with a 1 px black outline. Nothing has a white inner stroke or a `UICorner`.
+- [ ] Buttons inside frames are 3D with a 6 px lip, a 2 px outline and a text stroke, all in the button's dark shade.
+- [ ] The close button, topbar buttons, HUD icons and tile badges are 2D and use `PressScale`.
+- [ ] Text is flat white Montserrat with a fixed `TextSize` and no gradient.
+- [ ] Inventory items have no background tile.
